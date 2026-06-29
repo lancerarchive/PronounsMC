@@ -1,0 +1,20 @@
+name: PronounsMC
+version: 1.6.0
+main: com.alfie51m.pronounsMC.PronounsMC
+api-version: 26.1.2
+softdepend: [PlaceholderAPI]
+commands:
+  pronouns:
+    description: Main command for pronouns
+    usage: /pronouns <command>
+
+permissions:
+  pronouns.get:
+    description: Permission to get another player's pronouns.
+    default: op
+  pronouns.reload:
+    description: Permission to reload the plugin config.
+    default: op
+  pronouns.admin:
+    description: Permission to reset others pronouns with /pronouns reset <user>.
+    default: op
