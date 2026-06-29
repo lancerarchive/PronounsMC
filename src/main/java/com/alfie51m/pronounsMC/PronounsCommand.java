@@ -15,10 +15,15 @@ public class PronounsCommand implements TabExecutor {
         this.plugin = plugin;
     }
 
+    /** Convenience: parse legacy &-codes and send as Adventure Component. */
+    private void send(CommandSender sender, String legacyText) {
+        sender.sendMessage(ColorUtil.component(legacyText));
+    }
+
     @Override
     public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
         if (args.length == 0) {
-            sender.sendMessage(ColorUtil.color(plugin.getLang().get("messages.usageMain", "&cUsage: /pronouns <command>")));
+            send(sender, plugin.getLang().get("messages.usageMain", "&cUsage: /pronouns <command>"));
             return true;
         }
 
@@ -29,7 +34,7 @@ public class PronounsCommand implements TabExecutor {
             case "reset":
                 if (args.length >= 2) {
                     if (!sender.hasPermission("pronouns.admin")) {
-                        sender.sendMessage(ColorUtil.color(plugin.getLang().get("messages.noPermission", "&cNo permission.")));
+                        send(sender, plugin.getLang().get("messages.noPermission", "&cNo permission."));
                         return true;
                     }
 
@@ -41,44 +46,45 @@ public class PronounsCommand implements TabExecutor {
                         targetUUID = onlineTarget.getUniqueId();
                     } else {
                         OfflinePlayer offlineTarget = Bukkit.getOfflinePlayer(targetName);
-                        if (offlineTarget == null || !offlineTarget.hasPlayedBefore()) {
-                            sender.sendMessage(ColorUtil.color(plugin.getLang().get("messages.playerNotFound", "&cPlayer not found!")));
+                        if (!offlineTarget.hasPlayedBefore()) {
+                            send(sender, plugin.getLang().get("messages.playerNotFound", "&cPlayer not found!"));
                             return true;
                         }
                         targetUUID = offlineTarget.getUniqueId();
                     }
 
                     plugin.getDatabase().resetPronouns(targetUUID.toString());
-                    sender.sendMessage(ColorUtil.color(plugin.getLang().get("messages.pronounResetTarget", "&aReset pronouns for {player}." ).replace("{player}", targetName)));
+                    send(sender, plugin.getLang().get("messages.pronounResetTarget", "&aReset pronouns for {player}.")
+                            .replace("{player}", targetName));
                     return true;
                 }
 
                 if (!(sender instanceof Player player)) {
-                    sender.sendMessage(ColorUtil.color(plugin.getLang().get("messages.onlyPlayers", "&cOnly players can reset pronouns.")));
+                    send(sender, plugin.getLang().get("messages.onlyPlayers", "&cOnly players can reset pronouns."));
                     return true;
                 }
 
                 plugin.getDatabase().resetPronouns(player.getUniqueId().toString());
-                sender.sendMessage(ColorUtil.color(plugin.getLang().get("messages.pronounReset", "&aYour pronouns have been reset.")));
+                send(sender, plugin.getLang().get("messages.pronounReset", "&aYour pronouns have been reset."));
                 return true;
 
 
             case "reload":
                 if (!sender.hasPermission("pronouns.reload")) {
-                    sender.sendMessage(ColorUtil.color(plugin.getLang().get("messages.noPermission", "&cNo permission.")));
+                    send(sender, plugin.getLang().get("messages.noPermission", "&cNo permission."));
                     return true;
                 }
                 plugin.reloadPluginConfig();
-                sender.sendMessage(ColorUtil.color(plugin.getLang().get("messages.pluginReloaded", "&aPronounsMC config reloaded.")));
+                send(sender, plugin.getLang().get("messages.pluginReloaded", "&aPronounsMC config reloaded."));
                 return true;
 
             case "get":
                 if (args.length < 2) {
-                    sender.sendMessage(ColorUtil.color(plugin.getLang().get("messages.usageGet", "&cUsage: /pronouns get <username>")));
+                    send(sender, plugin.getLang().get("messages.usageGet", "&cUsage: /pronouns get <username>"));
                     return true;
                 }
                 if (!sender.hasPermission("pronouns.get")) {
-                    sender.sendMessage(ColorUtil.color(plugin.getLang().get("messages.noPermission", "&cNo permission.")));
+                    send(sender, plugin.getLang().get("messages.noPermission", "&cNo permission."));
                     return true;
                 }
 
@@ -90,8 +96,8 @@ public class PronounsCommand implements TabExecutor {
                     targetUUID = onlineTarget.getUniqueId();
                 } else {
                     OfflinePlayer offlineTarget = Bukkit.getOfflinePlayer(targetName);
-                    if (offlineTarget == null || !offlineTarget.hasPlayedBefore()) {
-                        sender.sendMessage(ColorUtil.color(plugin.getLang().get("messages.playerNotFound", "&cPlayer not found!")));
+                    if (!offlineTarget.hasPlayedBefore()) {
+                        send(sender, plugin.getLang().get("messages.playerNotFound", "&cPlayer not found!"));
                         return true;
                     }
                     targetUUID = offlineTarget.getUniqueId();
@@ -99,68 +105,66 @@ public class PronounsCommand implements TabExecutor {
 
                 String storedKey = plugin.getDatabase().getPronouns(targetUUID.toString());
                 if (storedKey == null) {
-                    String msgTemplate = plugin.getLang().get("messages.playerPronounNone", "&a{player}'s pronouns: &bNot set");
-                    msgTemplate = msgTemplate.replace("{player}", targetName);
-                    sender.sendMessage(ColorUtil.color(msgTemplate));
+                    String msgTemplate = plugin.getLang().get("messages.playerPronounNone", "&a{player}'s pronouns: &bNot set")
+                            .replace("{player}", targetName);
+                    send(sender, msgTemplate);
                 } else {
                     String colorized = plugin.getColoredPronoun(storedKey);
-                    String msgTemplate = plugin.getLang().get("messages.playerPronounFormat", "&a{player}'s pronouns: &r{pronouns}");
-                    msgTemplate = msgTemplate.replace("{player}", targetName);
-                    msgTemplate = msgTemplate.replace("{pronouns}", colorized);
-                    sender.sendMessage(ColorUtil.color(msgTemplate));
+                    String msgTemplate = plugin.getLang().get("messages.playerPronounFormat", "&a{player}'s pronouns: &r{pronouns}")
+                            .replace("{player}", targetName)
+                            .replace("{pronouns}", colorized);
+                    send(sender, msgTemplate);
                 }
                 return true;
 
             case "list":
                 if (!plugin.getPluginConfig().isConfigurationSection("availablePronouns")) {
-                    sender.sendMessage(ColorUtil.color("&cNo pronouns configured."));
+                    send(sender, "&cNo pronouns configured.");
                     return true;
                 }
 
-                sender.sendMessage(ColorUtil.color(
-                        plugin.getLang().get("messages.availablePronounsHeader", "&aAvailable pronouns:")
-                ));
+                send(sender, plugin.getLang().get("messages.availablePronounsHeader", "&aAvailable pronouns:"));
 
                 for (String key : plugin.getPluginConfig().getConfigurationSection("availablePronouns").getKeys(false)) {
                     String colorized = plugin.getColoredPronoun(key);
-                    sender.sendMessage(ColorUtil.color("&b- " + key + "&7: " + colorized));
+                    send(sender, "&b- " + key + "&7: " + colorized);
                 }
 
                 if (plugin.getPluginConfig().getBoolean("userSuppliedPronouns", false)) {
-                    sender.sendMessage(ColorUtil.color(
-                            plugin.getLang().get("messages.availablePronounsFooter", "&9You can also set your own pronouns using /pronouns set <pronoun>")
-                    ));
+                    send(sender, plugin.getLang().get("messages.availablePronounsFooter",
+                            "&9You can also set your own pronouns using /pronouns set <pronoun>"));
                 }
 
                 return true;
 
             case "set":
                 if (!(sender instanceof Player player)) {
-                    sender.sendMessage(ColorUtil.color(plugin.getLang().get("messages.onlyPlayers", "&cOnly players can set pronouns.")));
+                    send(sender, plugin.getLang().get("messages.onlyPlayers", "&cOnly players can set pronouns."));
                     return true;
                 }
 
                 if (args.length < 2) {
-                    sender.sendMessage(ColorUtil.color(plugin.getLang().get("messages.usageSet", "&cUsage: /pronouns set <pronoun>")));
+                    send(sender, plugin.getLang().get("messages.usageSet", "&cUsage: /pronouns set <pronoun>"));
                     return true;
                 }
 
                 String chosenPronoun = args[1].toLowerCase();
                 if (!(plugin.getPluginConfig().getBoolean("userSuppliedPronouns", false)
                         || plugin.getPluginConfig().contains("availablePronouns." + chosenPronoun))) {
-                    sender.sendMessage(ColorUtil.color(plugin.getLang().get("messages.invalidPronoun", "&cInvalid pronoun. Use /pronouns list to see available options.")));
+                    send(sender, plugin.getLang().get("messages.invalidPronoun",
+                            "&cInvalid pronoun. Use /pronouns list to see available options."));
                     return true;
                 }
 
                 plugin.getDatabase().setPronouns(player.getUniqueId().toString(), chosenPronoun);
                 String colorized = plugin.getColoredPronoun(chosenPronoun);
-                String msgTemplate = plugin.getLang().get("messages.pronounSet", "&aYour pronouns have been set to: &r{pronouns}");
-                msgTemplate = msgTemplate.replace("{pronouns}", colorized);
-                sender.sendMessage(ColorUtil.color(msgTemplate));
+                String msgTemplate = plugin.getLang().get("messages.pronounSet", "&aYour pronouns have been set to: &r{pronouns}")
+                        .replace("{pronouns}", colorized);
+                send(sender, msgTemplate);
                 return true;
         }
 
-        sender.sendMessage(ColorUtil.color(plugin.getLang().get("messages.usageMain", "&cUsage: /pronouns <command>")));
+        send(sender, plugin.getLang().get("messages.usageMain", "&cUsage: /pronouns <command>"));
         return true;
     }
 
@@ -177,7 +181,6 @@ public class PronounsCommand implements TabExecutor {
         }
 
         if (args.length == 2) {
-
             if (args[0].equalsIgnoreCase("get")) {
                 List<String> completions = new ArrayList<>();
                 String partial = args[1].toLowerCase();
